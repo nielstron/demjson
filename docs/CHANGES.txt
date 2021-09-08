@@ -1,0 +1,793 @@
+Change history for demjson python module.
+
+Version 3.0.0 released 2021-09-08
+=================================
+
+* Purge support for Python 2
+
+Version 2.2.4 released 2015-12-22
+=================================
+
+* Fix problem with jsonlint under Python 3 when trying to reformat
+  JSON (-f or -F options) and writing the output to standard output.
+
+
+Version 2.2.3 released 2014-11-12
+=================================
+
+* Fix return value of "jsonlint" command.  It should return a
+  non-zero value when an error is reported.
+  GitHub Issue 12: https://github.com/dmeranda/demjson/issues/12
+
+* Fix unit test failure in 32-bit Python 2.x environment.  This bug
+  only affected the unit tests, and was not a problem in the code
+  demjson module.
+  GitHub Issue 13: https://github.com/dmeranda/demjson/issues/13
+
+
+Version 2.2.2 released 2014-06-25
+=================================
+This minor release only fixes installation issues in older Python 3
+environments (< 3.4).
+
+If you are using Python 2 or Python 3.4, then there is nothing new.
+Once installed, there were no other changes to the API or any aspect
+of demjson operation.
+
+* Workarounds for bugs in Python's '2to3' conversion tool in Python
+  versions prior to 3.3.3.  This was Python bug 18037:
+  <http://bugs.python.org/issue18037>
+
+* The setup.py will install correctly in Python 3 environments that do
+  not have the 'setuptools' module installed.  It can now make use of
+  the more limited 'distutils' module instead.
+
+* The unit tests will now work without generating DeprecationWarning
+  messages under certain Python 3 versions.
+
+
+
+Version 2.2.1 released 2014-06-24
+=================================
+Minor changes.
+
+* HTML use: A new encoding option, 'html_safe', is available when
+  encoding to JSON to force any characters which are not considered to
+  be HTML-safe (or XML-safe) to be encoded.  This includes '<', '>',
+  '&', and '/' -- among other characters which are always escaped
+  regardless of this new option.  This is useful when applications
+  attempt to embed JSON into HTML and are not prepared to do the
+  proper escaping.  For jsonlint use '--html-safe'.
+
+      $ echo '"h&quot;ello</script>world]]>" | jsonlint -f --html-safe
+      "h\u0026quot;ello\u003c\/script\u003eworld]]\u003e"
+
+  See also CVE-2009-4924 for a similar report in another JSON package
+  for needing a way to do HTML-safe escaping.
+  <http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2009-4924>
+
+* Bug fix: If you created an instance of the 'json_options' class to
+  store any options, and then attempted to make a copy with it's
+  copy() method, not all of the options stored within it were copied.
+  This bug is very unlikely to occur, but it was fixed regardless.
+
+* Tests: The included self-test scripts for demjson should now pass
+  all tests when running under a narrow-Unicode version of Python.
+
+  It should be noted that the statistics for strings (max length, max
+  codepoint, etc.)  may not be correct under a narrow-Unicode Python.
+  This is a known issue that is likely not to be fixed.
+
+
+Version 2.2 released 2014-06-20
+=================================
+    [Note, version 2.1 was never released.]
+
+This release fixes compatibility with Python 2.6 and any Python
+compiled with narrow-Unicode; fixes bugs with statistics; adds new
+file I/O convenience functions; as well as adding many new
+enhancements concerning the treatment of numbers and floating-point
+values.
+
+* Python 2.6 support is now fixed (tested with 2.6.9).
+
+* Narrow-Unicode: demjson now works correctly when used with a Python
+  that was compiled with narrow-Unicode (BMP only) support; i.e., when
+  sys.maxunicode == 0xFFFF.
+
+  Note that narrow-Pythons simulate non-BMP characters as a UTF-16
+  surrogate-pair encoding; so string lengths, ord(), and other such
+  operations on Python strings may be surprising:
+
+      len( u"\U00010030" )    # => 1 for wide-Pythons
+      len( u"\U00010030" )    # => 2 for narrow-Pythons
+
+  With this release you may encode and decode any Unicode character,
+  including non-BMP characters, with demjson just as if Python was
+  compiled for wide-Unicode.
+
+* Statistics bug: In certain cases some of the decoding statistics
+  results -- obtained by passing 'return_stats=True' to the decode()
+  function -- were not getting set with the correct count. For example
+  the 'num_bools' item may not have reflected the total number of
+  'true' or 'false' identifiers appearing in the JSON document.  This
+  has now been fixed, and more thorough test cases added to the test
+  suite.
+
+* Negative NaN bug: Fixed a bug when decoding the JavaScript literal
+  "-NaN" (a negative NaN) that caused a decoding error.  Now it
+  correctly produces a Python equivalent NaN (not-a-number) value.
+  Since the sign of a NaN is insignificant, encountering a "-NaN"
+  which would have triggered the bug was quite unlikely.
+
+* decode_file: A convenience function 'decode_file()' has been added
+  which wraps the 'decode()' function and which reads the JSON
+  document from a file.  It will correctly open the file in binary
+  mode and insure the file is closed.  All other options supported
+  by decode() can be passed.
+
+      data = decode_file( "sample.json", allow_comments=True )
+
+* encode_to_file: A convenience function 'encode_to_file()' has been
+  added which wraps the 'encode()' function and which writes the
+  resultant JSON document into a file.  It will correctly open the
+  file in binary mode and insure it is properly closed.
+
+  By default encode the JSON will be encoded as UTF-8 unless otherwise
+  specified with the 'encoding' option. All other options supported by
+  encode() can be passed.
+
+  This function will also refuse to overwrite any existing file
+  unless the 'overwrite' option is set to True.
+
+      encode_to_file( "sample.json", data, overwrite=True )
+
+* Number radix: When reformatting with jsonlint, in non-strict mode,
+  the original radix of numbers will be preserved (controlled with the
+  '--[no]-keep-format' option).  If a number in a JSON/JavaScript text
+  was hex (0x1C), octal (0o177, 0177), or binary (0b1011); then it
+  will stay in that format rather than being converted to decimal.
+
+      $ echo '[10, 0xA, 012, 0b1010]' | jsonlint -f --nonstrict
+      [
+        10,
+        0xa,
+        012,
+        0b1010
+      ]
+
+  Correspondinly, in the decode() function there is a new option
+  'keep_format' that when True will return non-decimal integer values
+  as a type 'json_int'; which is a subclass of the standard int, but
+  that additionally remembers the original radix format (hex,etc.).
+
+* Integer as Float: There is a new option, int_as_float, that allows
+  you to decode all numbers as floating point rather than
+  distinguishing integers from floats.  This allows you to parse JSON
+  exactly as JavaScript would do, as it lacks an integer type.
+
+      demjson.decode( '123', int_as_float=True )   # =>  123.0
+
+* Float vs Decimal: You can now control the promotion of 'float' to
+  'decimal.Decimal' numbers. Normally demjson will try to keep
+  floating-point numbers as the Python 'float' type, unless there is
+  an overflow or loss of precision, in which case it will use
+  'decimal.Decimal' instead.  The new option 'float_type' can control
+  this type selection:
+
+      float_type = demjson.NUMBER_AUTO     # The default
+      float_type = demjson.NUMBER_DECIMAL  # Always use decimal
+      float_type = demjson.NUMBER_FLOAT    # Always use float
+
+  Do note that if using NUMBER_FLOAT -- which disables the promotion
+  to the decimal.Decimal type -- that besides possible loss of
+  precision (significant digits) that numeric underflow or overflow
+  can also occur.  So very large numbers may result in 'inf'
+  (infinity) and small numbers either in subnormal values or even just
+  zero.
+
+  Normally when demjson encounters the JavaScript keywords 'NaN',
+  'Infinity', and '-Infinity' it will decode them as the Python float
+  equivalent (demjson.nan, demjson.inf, and demjson.neginf).  However
+  if you use NUMBER_DECIMAL then these will be converted to decimal
+  equivalents instead: Decimal('NaN'), Decimal('Infinity'), and
+  Decimal('-Infinity').
+
+* Significant digits: When reformatting JSON, the jsonlint command
+  will now try to preserve all significant digits present in
+  floating-point numbers when possible.
+
+     $ echo "3.141592653589793238462643383279502884197169399375105820974944592307816406286" | \
+       jsonlint -f --quiet
+
+     3.141592653589793238462643383279502884197169399375105820974944592307816406286
+
+* Decimal contexts: The Python 'decimal' module allows the user
+  to establish different "contexts", which among other things can
+  change the number of significant digits kept, the maximum exponent
+  value, and so on.  If the default context is not sufficient (which
+  allows 23 significant digits), you can tell demjson to use a
+  different context by setting the option 'decimal_context'.  It
+  may take several values:
+
+      'default'   -- Use Python's default:  decimal.DefaultContext
+      'basic'     -- Use Python's basic:    decimal.BasicContext
+      'extended'  -- Use Python's extended: decimal.ExtendedContext
+      123         -- Creates a context with the number of significant digits.
+      <context>   -- Any instance of the class decimal.Context.
+
+  This option is only available in the programming interface and is not
+  directly exposed by the jsonlint command.
+
+      import decimal, demjson
+
+      myctx = decimal.Context( prec=50, rounding=decimal.ROUND_DOWN )
+      data = demjson.decode_file( "data.json", decimal_context=myctx )
+
+  Note that Python's Decimal class will try to "store" all the
+  significant digits originally present, including excess tailing
+  zeros.  However any excess digits beyond the context's configuration
+  will be lost as soon as any operation is performed on the value.
+
+
+Version 2.1 - NOT RELEASED
+============================
+n/a
+
+
+Version 2.0.1 released 2014-05-26
+=================================
+This is a re-packaging of 2.0, after discovering problems with
+incorrect checksums in the PyPI distribution of 2.0.  No changes were
+made from 2.0.
+
+
+Version 2.0 released 2014-05-21
+===============================
+
+This is a major new version that contains many added features and
+enhanced functionality, as well as a small number of backwards
+incompatibilities.  Where possible these incompatibilities were kept
+to a minimum, however it is highly recommended that you read these
+change notes thoroughly.
+
+ Major changes
+ -------------
+
+ * Python 2.6 minimum: Support has been dropped for really old
+   versions of Python.  At least Python 2.6 or better is now required.
+
+ * Python 3: This version works with both Python 2 and Python 3.
+   Support for Python 3 is achieved with the 2to3 conversion program.
+   When installing with setup.py or a PyPI distribution mechanism such
+   as pip or easy_install, this conversion should automatically
+   happen.
+
+   Note that the API under Python 3 will be slightly different.
+   Mainly new Python types are supported.  Also there will be some
+   cases in which byte array types are used or returned rather than
+   strings.
+
+   Read the file "docs/PYTHON3.txt" for complete information.
+
+ * RFC 7159 conformance: The latest RFC 7159 (published March 2014 and
+   which superseded RFCs 4627 and 7158) relaxes the constraint that a
+   JSON document must start with an object or array.  This also brings
+   it into alignment with the ECMA-404 standard.
+
+   Now any JSON value type is a legal JSON document.
+
+ * Improved lint checking: A new JSON parsing engine has many
+   improvements that make demjson better at "lint checking":
+
+       - Generation of warnings as well as errors.
+
+       - The position, line and column, of errors is reported; and in
+         a standardized format.
+
+       - Detection of potential data portability problems even when
+         there are no errors.
+
+       - Parser recovery from many errors, allowing for the
+         reporting of multiple errors/warnings in one shot.
+
+ * Statistics: The decoder can record and supply statistics
+   on the input JSON document. This includes such things as
+   the length of the longest string, the range of Unicode
+   characters encountered, if any integers are larger than
+   32-bit, 64-bit, or more; and much more.
+
+   Use the --stats option of the jsonlint command.
+
+ * Callback hooks: This version allows the user to provide a number
+   of different callback functions, or hooks, which can do special
+   processing.  For example when parsing JSON you could detect
+   strings that look like dates, and automatically convert them
+   into Python datetime objects instead.
+
+   Read the file "docs/HOOKS.txt" for complete information.
+
+ * Subclassing: Subclassing the demjson.JSON class is now highly
+   discouraged as this version as well as future changes may alter the
+   method names and parameters.
+
+   In particular overriding the encode_default() method has been
+   dropped; it will no longer work.
+
+   The new callback hooks (see above) should provide a better
+   way to achieve most needs that previously would have been done with
+   subclassing.
+
+ Data type support
+ -----------------
+
+ * Python 3 types: Many new types introduced with Python 3 are
+   directly supported, when running in a Python 3 environment.  This
+   includes 'bytes', 'bytearray', 'memoryview', 'Enum', and 'ChainMap'.
+
+   Read the file "docs/PYTHON3.txt" for complete information.
+
+ * Dates and times: When encoding to JSON, most of Python's standard
+   date and time types (module 'datetime') will be automatically
+   converted into the most universally-portable format; usually one of
+   the formats specified by ISO-8601, and when possible the stricter
+   syntax specified by the RFC 3339 subset.
+
+   datetime.date
+       Example output is "2014-02-17".
+   datetime.datetime
+       Example output is "2014-02-17T03:58:07.692005-05:00".
+       The microseconds portion will not be included if it is zero.
+       The timezone offset will not be present for naive datetimes,
+       or will be the letter "Z" if UTC.
+   datetime.time
+       Example output is "T03:58:07.692005-05:00".
+       Just like for datetime, the microseconds portion will not be
+       included if it is zero.  The timezone offset will not be
+       present for naive datetimes, or will be the letter "Z" if UTC.
+   datetime.timedelta
+       Example output is "P2DT6H17M23.873S", which is the ISO 8601
+       standard format for time durations.
+
+   It is possible to override the formats used with options, which all
+   default to "iso".  Generally you may provide a format string
+   compatible with the strftime() method. For timedelta the only
+   choices are "iso" or "hms".
+
+       import demjson, datetime
+
+       demjson.encode( datetime.date.today(), date_format="%m/%d/%Y" )
+       # gives =>    "02/17/2014"
+
+       demjson.encode( datetime.datetime.now(), datetime_format="%a %I:%M %p" )
+       # gives =>    "Mon 08:24 AM"
+
+       demjson.encode( datetime.datetime.time(), datetime_format="%H hours %M min" )
+       # gives =>    "08 hours 24 min"
+
+       demjson.encode( datetime.timedelta(1,13000), timedelta_format="hms" )
+       # gives =>    "1 day, 3:36:40"
+
+ * Named tuples: When encoding to JSON, all named tuples (objects of
+   Python's standard 'collections.namedtuple' type) are now encoded
+   into JSON as objects rather than as arrays.  This behavior can be
+   changed with the 'encode_namedtuple_as_object' argument to False,
+   in which case they will be treated as a normal tuple.
+
+       from collections import namedtuple
+       Point = namedtuple('Point', ['x','y'])
+       p = Point(5, 8)
+
+       demjson.encode( p )
+            # gives =>    {"x":5, "y":8}
+
+       demjson.encode( p, encode_namedtuple_as_object=False )
+            # gives =>    [5, 8]
+
+   This behavior also applies to any object that follows the
+   namedtuple protocol, i.e., which are subclasses of 'tuple' and that
+   have an "_asdict()" method.
+
+   Note that the order of keys is not necessarily preserved, but instead
+   will appear in the JSON output alphabetically.
+
+ * Enums: When encoding to JSON, all enumeration values (objects
+   derived from Python's standard 'enum.Enum' type, introducted in
+   Python 3.4) can be encoded in several ways.  The default is to
+   encode the name as a string, though the 'encode_enum_as' option
+   can change this.
+
+       import demjson, enum
+       class Fruit(enum.Enum):
+           apple = 1
+           bananna = 2
+    
+       demjson.encode( Fruit.bananna, encode_enum_as='name' ) # Default
+       # gives =>    "bananna"
+
+       demjson.encode( Fruit.bananna, encode_enum_as='qname' )
+       # gives =>    "Fruit.bananna"
+
+       demjson.encode( Fruit.bananna, encode_enum_as='value' )
+       # gives =>    2
+
+ * Mutable strings: Support for the old Python mutable strings (the
+   UserDict.MutableString type) has been dropped.  That experimental
+   type had already been deprecated since Python 2.6 and removed
+   entirely from Python 3.  If you have code that passes a
+   MutableString to a JSON encoding function then either do not
+   upgrade to this release, or first convert such types to standard
+   strings before JSON encoding them.
+
+ Unicode and codec support
+ -------------------------
+
+ * Extended Unicode escapes: When reading JSON in non-strict mode any
+   extended Unicode escape sequence, such as "\u{102E3C}", will be
+   processed correctly.  This new escape sequence syntax was
+   introduced in the latest versions of ECMAScript to make it easier
+   to encode non-BMP characters into source code; they are not however
+   allowed in strict JSON.
+
+ * Codecs: The 'encoding' argument to the decode() and encode()
+   functions will now accept a codec object as well as an encoding
+   name; i.e., any subclass of 'codecs.CodecInfo'.  All \u-escaping in
+   string literals will be automatically adjusted based on your custom
+   codec's repertoire of characters.
+
+ * UTF-32: The included functions for UTF-32/UCS-4 support (missing
+   from older versions of Python) are now presented as a full-blown
+   codec class: 'demjson.utf32'.  It is completely compatible with the
+   standard codecs module.
+
+   It is normally unregisted, but you may register it with the Python
+   codecs system by:
+
+       import demjson, codecs
+       codecs.register( demjson.utf32.lookup )
+
+ * Unicode errors: During reading or writing JSON as raw bytes (when
+   an encoding is specified), any Unicode errors are now wrapped in a
+   JSON error instead.
+
+       - UnicodeDecodeError is transformed into JSONDecodeError
+       - UnicodeEncodeError is transformed into JSONEncodeError
+
+   The original exception is made available inside the top-most error
+   using Python's Exception Chaining mechanism (described in the
+   Errors and Warnings change notes).
+
+ * Generating Unicode escapes: When outputting JSON certain additional
+   characters in strings will now always be \u-escaped to increase
+   compatibility with JavaScript.  This includes line terminators
+   (which are forbidden in JavaScript string literals) as well as
+   format control characters (which any JavaScript implementation is
+   allowed to ignore if it chooses per the ECMAscript standard).
+
+   This essentially means that characters in any of the Unicode
+   categories of Cc, Cf, Zl, and Zp will always be \u-escaped; which
+   includes for example:
+
+       - U+007F  DELETE               (Category Cc)
+       - U+00AD  SOFT HYPHEN          (Category Cf)
+       - U+200F  RIGHT-TO-LEFT MARK   (Category Cf)
+       - U+2028  LINE SEPARATOR       (Category Zl)
+       - U+2029  PARAGRAPH SEPARATOR  (Category Zp)
+       - U+E007F CANCEL TAG           (Category Cf)
+
+ Exceptions (Errors)
+ -------------------
+
+ * Substitutions: During JSON decoding the parser can recover from
+   some errors.  When this happens you may get back a Python
+   representation of the JSON document that has had certain
+   substitutions made:
+
+     - Bad unicode characters (escapes, etc.) in strings will be
+       substituted with the character U+FFFD <REPLACEMENT CHARACTER>,
+       which is reserved by the Unicode standard specifically for this
+       type of use.
+
+     - Failure to decode a particular value, usually the result of
+       syntax errors, will generally be represented in the Python
+       result as the 'demjson.undefined' singleton object.
+
+ * Error base type: The base error type 'JSONError' is now a subclass
+   of Python's standard 'Exception' class rather than 'ValueError'.
+   The new exception hierarchy is:
+
+       Exception
+       .   demjson.JSONException
+       .   .   demjson.JSONSkipHook
+       .   .   demjson.JSONStopProcessing
+       .   .   demjson.JSONError
+       .   .   .   demjson.JSONDecodeError
+       .   .   .   .   demjson.JSONDecodeHookError
+       .   .   .   demjson.JSONEncodeError
+       .   .   .   .   demjson.JSONEncodeHookError
+
+   If any code had been using 'try...except' blocks with 'ValueError'
+   then you will need to change; preferably to catch 'JSONError'.
+
+ * Exception chaining: Any errors that are incidentally raised during
+   JSON encoding or decoding, such as UnicodeDecodeError or anything
+   raised by user-supplied hook functions, will now be wrapped inside
+   a standard JSONError (or subclass).
+
+   When running in Python 3 the standard Exception Chaining (PEP 3134)
+   mechanism is employed.  Under Python 2 exception chaining is
+   simulated, but a printed traceback of the original exception may
+   not be printed. The original exception is in the __cause__ member
+   of the outer exception and it's traceback in the __traceback__
+   member.
+
+ The jsonlint command
+ --------------------
+
+ * The "jsonlint" command script will now be installed by default.
+
+ * Error message format: All error messages, including warnings and
+   such, now have a standardized output format.  This includes the
+   file position (line and column), and any other context.
+
+   The first line of each message begins with some colon-separated
+   fields: filename, line number, column number, and severity.
+   Subsequent lines of a message are indented.  A sample message might
+   be:
+
+       sample.json:6:0: Warning: Object contains duplicate key: 'title'
+          |  At line 6, column 0, offset 72
+          |  Object started at line 1, column 0, offset 0 (AT-START)
+
+   This format is compatible with many developer tools, such as the
+   emacs 'compile-mode' syntax, which can parse the error messages and
+   place your cursor directly at the point of the error.
+
+ * jsonlint class: Almost all the logic of the jsonlint script is now
+   available as a new class, demjson.jsonlint, should you want to call
+   it programatically.
+
+   The included "jsonlint" script file is now just a very small
+   wrapper around that class.
+
+ * Other jsonlint improvements:
+
+       - New -o option to specify output filename
+       - Verbosity is on by default, new --quiet option
+       - Output formatting is cleaner, and has options to control indenting
+       - Better help text
+
+ Other changes
+ -------------
+
+ * Sorting of object keys: When generating JSON there is now an
+   option, 'sort_keys', to specify how the items within an object
+   should be sorted.  The equivalent option is '--sort' for the
+   jsonlint command.
+
+   The new default is to do a 'smart' alphabetical-and-numeric sort,
+   so for example keys would be sorted like:
+
+       { "item-1":1, "ITEM-2":2, "Item-003":3, "item-10":10 }
+
+   You can sort by any of:
+
+      SORT_SMART: Smart alpha-numeric
+      SORT_ALPHA: Alphabetical, case-sensitive (in string Unicode order)
+      SORT_ALPHA_CI: Alphabetical, case-insensitive
+      SORT_NONE: None (random, by hash table key)
+
+      SORT_PRESERVE: Preserve original order if possible. This
+            requires the Python OrderedDict type which was introduced
+            in Python 2.7.  For all normal un-ordered dictionary types
+            the sort order reverts to SORT_ALPHA.
+
+      function: Any user-defined ordering function.
+
+ * New JavaScript literals: The latest versions of JavaScript
+   (ECMAScript) have introduced new literal syntax.  When not in
+   strict mode, demjson will now recognize several of these:
+
+     - Octal numbers, e.g., 0o731
+     - Binary numbers, e.g., 0b1011
+     - Extended unicode escapes, e.g., \u{13F0C}
+
+ * Octal/decimal radix: Though not permitted in JSON, when in
+   non-strict mode the decoder will allow numbers that begin with a
+   leading zero digit.  Traditionally this has always been interpreted
+   as being an octal numeral.  However recent versions of JavaScript
+   (ECMAScript 5) have changed the language syntax to interpret
+   numbers with leading zeros a decimal.
+
+   Therefore demjson allows you to specify which radix should be used
+   with the 'leading_zero_radix' option.  Only radix values of 8
+   (octal) or 10 (decimal) are permitted, where octal remains the
+   default.
+
+       demjson.decode( '023', strict=False )
+       # gives =>   19  (octal)
+
+       demjson.decode( '023', strict=False, leading_zero_radix=10 )
+       # gives =>   23  (decimal)
+
+   The equivalent option for jsonlint is '--leading-zero-radix':
+
+       $ echo "023" | jsonlint --quiet --format --leading-zero-radix=10
+       23
+
+
+ * version_info: In addition to the 'demjson.__version__' string,
+   there is a new 'demjson.version_info' object that allows more
+   specific version testing, such as by major version number.
+
+
+
+Version 1.6 released 2011-04-01
+===============================
+
+ * Bug fix. The jsonlint tool failed to accept a JSON document from
+   standard input (stdin).  Also added a --version and --copyright
+   option support to jsonlint.  Thanks to Brian Bloniarz for reporting
+   this bug.
+
+ * No changes to the core demjson library/module was made, other
+   than a version number bump.
+
+
+Version 1.5 released 2010-10-10
+===============================
+
+ * Bug fix. When encoding Python strings to JSON, occurances of
+   character U+00FF (ASCII 255 or 0xFF) may result in an error.
+   Thanks to Tom Kho and Yanxin Shi for reporting this bug.
+
+
+Version 1.4 released 2008-12-17
+===============================
+
+ * Changed license to LGPL 3 (GNU Lesser General Public License) or
+   later.  Older versions still retain their original licenses.
+
+ * No changes other than relicensing were made.
+
+
+Version 1.3 released 2008-03-19
+
+ * Change the default value of escape_unicode to False rather than
+   True.
+
+ * Parsing JSON strings was not strict enough.  Prohibit multi-line
+   string literals in strict mode.  Also prohibit control characters
+   U+0000 through U+001F inside string literals unless they are
+   \u-escaped.
+
+ * When in non-strict mode where object keys may be JavaScript
+   identifiers, allow those identifiers to contain '$' and '_'.  Also
+   introduce a method, decode_javascript_identifier(), which converts
+   a JavaScript identifier into a Python string type, or can be
+   overridden by a subclass to do something different.
+
+ * Use the Python decimal module if available for representing
+   numbers that can not fit into a float without loosing precision.
+   Also encode decimal numbers into JSON and use them as a source
+   for NaN and Infinity values if necessary.
+
+ * Allow Python complex types to be encoded into JSON if their
+   imaginary part is zero.
+
+ * When parsing JSON numbers try to keep whole numbers as integers
+   rather than floats; e.g., '1e+3' will be 1000 rather than 1000.0.
+   Also make sure that overflows and underflows (even for the larger
+   Decimal type) always result in Infinity or -Infinity values.
+
+ * Handle more Python collection types when creating JSON; such as
+   deque, set, array, and defaultdict.  Also fix a bug where UserDict
+   was not properly handled because of it's unusual iter() behavior.
+
+
+Version 1.2 released 2007-11-08
+===============================
+
+ * Changed license to GPL 3 or later.  Older versions still retain
+   their original licenses.
+
+ * Lint Validator: Added a "jsonlint" command-line utility for
+   validating JSON data files, and/or reformatting them.
+
+ * Major performance enhancements.  The most signifant of the many
+   changes was to use a new strategy during encoding to use lists and
+   fast list operations rather than slow string concatenation.
+
+ * Floating-Point Precision: Fixed a bug which could cause loss of
+   precision (e.g., number of significant digits) when encoding
+   floating-point numbers into their JSON representation.  Also, the
+   bundled test suite now properly tests floating-point encoding
+   allowing for slight rounding errors which may naturally occur on
+   some platforms.
+
+ * Very Large Hex Numbers: Fixed a bug when decoding very large
+   hexadecimal integers which could result in the wrong value for
+   numbers larger than 0xffffffff.  Note that the language syntax
+   allows such huge numbers, and since Python supports them too this
+   module will decode such numbers.  However in practice very few
+   other JSON or Javascript implementations support arbitrary-size
+   integers.  Also hex numbers are not valid when in strict mode.
+
+ * According to the JSON specification a document must start with
+   either an object or an array type.  When in strict mode if the
+   first non-whitespace object is any other type it should be
+   considered to be an invalid document.  The previous version
+   erroneously decoded any JSON value (e.g., it considered the
+   document "1" to be valid when it should not have done so.
+   Non-strict mode still allows any type, as well as by setting
+   the new behavior flag 'allow_any_type_at_start'.
+
+ * Exception Handling: Minor improvements in exception handling by
+   removing most cases where unbounded catching was performed (i.e.,
+   an "except:" with no specified exception types), excluding during
+   module initialization.  This will make the module more
+   caller-friendly, for instance by not catching and "hiding"
+   KeyboardInterrupt or other asyncrhonous exceptions.
+
+ * Identifier Parsing: The parser allows a more expanded syntax for
+   Javascript identifiers which is more compliant with the ECMAscript
+   standard.  This will allow, for example, underscores and dollar
+   signs to appear in identifiers.  Also, to provide further
+   information to the caller, rather than converting identifiers into
+   Python strings they are converted to a special string-subclass.
+   Thus they will look just like strings (and pass the
+   "isinstance(x,basestring)" test), but the caller can do a type test
+   to see if the value originated from Javascript identifiers or string literals.
+   Note this only affects the non-strict (non-JSON) mode.
+
+ * Fixed a liberal parsing bug which would successfully decode JSON
+   ["a" "b"] into Python ['a', 'b'], rather than raising a syntax
+   error for the missing comma.
+
+ * Fixed a bug in the encode_default() method which raised the
+   wrong kind of error.  Thanks to Nicolas Bonardelle.
+
+ * Added more test cases to the bundled self-test program (see
+   test/test_demjson.py).  There are now over 180 individual
+   test cases being checked.
+
+
+Version 1.1 released 2006-11-06
+===============================
+
+ * Extensive self testing code is now included, conforming to the
+   standard Python unittest framework.  See the INSTALL.txt file for
+   instructions.
+
+ * Corrected character encoding sanity check which would erroneously
+   complain if the input contained a newline or tab character within
+   the first two characters.
+
+ * The decode() and encode() top-level functions now allow additional
+   keyword arguments to turn specific behaviors on or off that
+   previously could only be done using the JSON class directly.  The
+   keyword arguments look like 'allow_comments=True'.  Read the
+   function docstrings for more information on this enhancement.
+
+ * The decoding of supplementary Unicode character escape sequences
+   (such as "\ud801\udc02") was broken on some versions of Python.
+   These are now decoded explicitly without relying on Python so they
+   always work.
+
+ * Some Unicode encoding and decoding with UCS-4 or UTF-32 were not
+   handled correctly.
+
+ * Encoding of pseudo-string types from the UserString module are
+   now correctly encoded as if real strings.
+
+ * Improved simulation of nan, inf, and neginf classes used if the
+   Python interpreter doesn't support IEEE 754 floating point math.
+
+ * Updated the documentation to describe why this module does not
+   permit multi-line string literals.
+
+
+Version 1.0 released 2006-08-10
+===============================
+
+ * Initial public release

@@ -1,0 +1,63 @@
+language: python
+
+cache:
+  pip: true
+
+jobs:
+  include:
+  - python: '3.6'
+  - python: '3.7'
+  - python: '3.8'
+  fast_finish: true
+
+dist: xenial
+os: linux
+
+install:
+- pip install coverage coveralls
+- pip install -e .
+
+script:
+# tests installation and build
+- make all
+- coverage run --source=demjson3 test/test_demjson3.py
+# creates documentation files
+- make docs
+
+after_success:
+- coverage report
+- coveralls
+
+before_deploy:
+- git config --local user.name "nielstron"
+- export TRAVIS_TAG=release-$(cat setup.py | grep "version = " | cut -d "\"" -f 2)
+- git tag $TRAVIS_TAG || echo "Tag already exists"
+
+deploy:
+  - provider: pypi
+    on:
+      branch: master
+      python: '3.8'
+    skip_existing: true
+    username: "__token__"
+    password:
+      secure: Gks/w6gaq8lYtFLrc92tTPj2+dWt12NqjOTbYRgywJnzi5Eh5lshTf2gJl9b/9WHldSLyUWn/EIWDLLS71yUJOF0O1Y82KfSQ7WoZZovTvd0VmC63z6/bV7ZQ8oiVTfa+saUG3aRsadbOqSnPoHGM1HGQ+CZaE8NLaEKf4IqdQiZDXd4ESnJV4th0wn/WM53uPsBgZxnaiyn+o9NU93QI7AhC2v3KL/yUHc/MCZ5+P7pq7U+Ve5GATZtDVMTKE7BhWWE1eQAhRem0k047EsmwgvgWDk3e2iD7YO56Cm8OkOQE/D4fJiLXajZWVJ0tcJMq7h9yCANm4xjTMnaS617j3zt+YK1cUXESiTmxCjuIUZCmmfqxVrMP5xVhFlmk8V4hj7eqKMKv+M+4zHT7lkvH0Im3X0b+BwnR4V9zIhg21sq73SoAc0SLv6hpDZV7yjhmXlPa/E5Yvcs2tLxYZ3Da3Mm9/GFX0R0m7uWo+VfvR9jbbxcwl+SgIsGCt/0uiCVxlv7Tmblb4pVwvqBDOP+E+X4g0DkV4tSEm9ISu9xfsMEGqxOOfuBrwVkde9SgeTjhegHx+z6yFMCUH4THL4CPcYrik/tOgIIve2wKV704QDEA49NtLisag+k/9U+DdWVYJv6nHwwLaOO2irqxGUd6WR/WjyMtszqs1PgvcQiy+U=
+  - provider: releases
+    cleanup: false
+    overwrite: false
+    on:
+      branch: master
+      python: '3.8'
+      condition: "$TRAVIS_EVENT_TYPE = push"
+    api_key:
+      secure: oE9354cYf8dLDLzJ0vSmaA7Hr929pWM6rtGQIUlrva+H+sO1On/aVxmkpbR1bUq0/UArxvAGXvK98UnjcDDaJDZ0ipcjfKR77XTl+qWHgWdHnJ9zG0xTyhHpfBkZceK/k7DVJBGKw0F54VTFu33WVihDF+lW43tD/07l5w6leASgO3Dp9QRzSPDY8ZSRgcjWZwYJd6ynQ7AAr92BQxKL2Nzhe2iYM9tZhcETeXnjCU1ujUl8eIhAqv/XEUAv88fgEBIsZwm1zAtiSNkJhA60RNLWTex/QoJ1Mp1nC5mn2cqjZvKKnQLBkLqzbzIXrdZFvI7H4MEwsbfU85Pw89GkiH3PhPkNs/xD2VywIphVTv5vFZhjj6OzinhG83nKUOE+a5PaWTNSovjuKzAWl7OZ/PwXRMa+nqg00GMUevzBghcJmboBnHl8IMcdrmclF967jesFkV7y1gDBl7o302gUHnOeD3Q+nnxNcsmA4XfblZaBcrhLlcnk+wMPNEX0gmhP8NtFpBAq9VGiTPFnhWjDR3DTHjeoHmaYQ1Zc2NkzyPIam+XrCX6vc2fSo41L4CygU808sK5cttS5xK8lLsJYA1B5GwPXUd+AxfRw6rxwg/3tn1XqR+siwUCJ8J5Vw1ULpfzHr1LjVuwbTjj1S+RenCrmsExdHL5uJzxFE75JffA=
+  - provider: pages
+    skip_cleanup: true
+    github_token:
+      secure: oE9354cYf8dLDLzJ0vSmaA7Hr929pWM6rtGQIUlrva+H+sO1On/aVxmkpbR1bUq0/UArxvAGXvK98UnjcDDaJDZ0ipcjfKR77XTl+qWHgWdHnJ9zG0xTyhHpfBkZceK/k7DVJBGKw0F54VTFu33WVihDF+lW43tD/07l5w6leASgO3Dp9QRzSPDY8ZSRgcjWZwYJd6ynQ7AAr92BQxKL2Nzhe2iYM9tZhcETeXnjCU1ujUl8eIhAqv/XEUAv88fgEBIsZwm1zAtiSNkJhA60RNLWTex/QoJ1Mp1nC5mn2cqjZvKKnQLBkLqzbzIXrdZFvI7H4MEwsbfU85Pw89GkiH3PhPkNs/xD2VywIphVTv5vFZhjj6OzinhG83nKUOE+a5PaWTNSovjuKzAWl7OZ/PwXRMa+nqg00GMUevzBghcJmboBnHl8IMcdrmclF967jesFkV7y1gDBl7o302gUHnOeD3Q+nnxNcsmA4XfblZaBcrhLlcnk+wMPNEX0gmhP8NtFpBAq9VGiTPFnhWjDR3DTHjeoHmaYQ1Zc2NkzyPIam+XrCX6vc2fSo41L4CygU808sK5cttS5xK8lLsJYA1B5GwPXUd+AxfRw6rxwg/3tn1XqR+siwUCJ8J5Vw1ULpfzHr1LjVuwbTjj1S+RenCrmsExdHL5uJzxFE75JffA=
+    keep_history: true
+    on:
+      branch: master
+      python: '3.8'
+      condition: "$TRAVIS_EVENT_TYPE = push"
+    commiter_from_gh: true

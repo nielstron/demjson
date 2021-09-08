@@ -1,0 +1,144 @@
+Using demjson with Python 3
+===========================
+
+Starting with release 3.0, demjson and jsonlint, support only Python 3.
+
+
+Decoding JSON into Python values
+--------------------------------
+
+When you decode a JSON document you can pass either a string or
+a bytes type.
+
+If you pass a string, then it is assumed to already be a sequence
+of Unicode characters.  So demjson's own Unicode decoding step will be
+skipped.
+
+When you pass a byte-oriented type the decode() function will
+attempt to detect the Unicode encoding and appropriately convert the
+bytes into a Unicode string first.  You can override the guessed
+encoding by specifying the appropriate codec name, or codec object.
+
+For example, the following are equivalent and have the same result:
+
+    demjson.decode( '"\u2014"' )
+    demjson.decode( b'"\xe2\x80\x94"' )
+    demjson.decode( bytes([ 0x22, 0xE2, 0x80, 0x94, 0x22 ]) )
+
+Notice that with the last two examples the decode() function has
+automatically detected that the byte array was UTF-8 encoded.  You can
+of course pass in an 'encoding' argument to force the Unicode decoding
+codec to use -- though if you get this wrong a UnicodeDecodeError may
+be raised.
+
+
+Reading JSON from a file
+------------------------
+
+When reading from a file the bytes it contains must be converted into
+Unicode characters. If you want demjson to do that be sure to open the
+file in binary mode:
+
+    json_data = open("myfile.json", "rb").read()
+    #  => json_data is a bytes array
+    py_data = demjson.decode( json_data, encoding="utf8" )
+
+But if you read the file in text mode then the Unicode decoding is
+done by Python's own IO core, and demjson will parse the
+already-Unicode string without doing any decoding:
+
+    json_data = open("myfile.json", "r", encoding="utf8").read()
+    #  => json_data is a (unicode) string
+    py_data = demjson.decode( json_data )
+
+
+Encoding Python values to JSON
+------------------------------
+
+When encoding a Python value into a JSON document, you will
+generally get a string result (which is a sequence of Unicode
+characters).
+
+However if you specify a particular encoding, then you will
+instead get a byte array as a result.
+
+    demjson.encode( "\u2012" )
+    #  => Returns a string of length 3
+
+    demjson.encode( "\u2012", encoding="utf-8" )
+    #  => Returns 5 bytes b'"\xe2\x80\x94"'
+
+
+Writing JSON to a file
+----------------------
+
+When generating JSON and writing it to a file all the Unicode
+characters must be encoded into bytes.  You can let demjson do that by
+specifying an encoding, though be sure that you open the output file
+in binary mode:
+
+    json_data = demjson.encode( py_data, encoding="utf-8" )
+    # json_data will be a bytes array
+    open("myfile.json", "wb" ).write( json_data )
+
+The above has the advantage that demjson can automatically adjust the
+\u-escaping depending on the output encoding.
+
+But if you don't ask for any encoding you'll get the JSON output as a
+Unicode string, in which case you need to open your output file in
+text mode with a specific encoding.  You must choose a suitable
+encoding or you could get a UnicodeEncodeError.
+
+    json_data = demjson.encode( py_data )
+    # json_data will be a (unicode) string
+    open("myfile.json", "w", encoding="utf-8" ).write( json_data )
+
+
+Encoding byte types
+-------------------
+
+If you are encoding into JSON and the Python value you pass is, or
+contains, any byte-oriented type ('bytes', 'bytearray', or
+'memoryview') value; then the bytes must be converted into a different
+value that can be represented in JSON.
+
+The default is to convert bytes into an array of integers, each with
+a value from 0 to 255 representing a single byte.  For example:
+
+    py_data = b'\x55\xff'
+
+    demjson.encode( py_data )
+    # Gives =>  '[85,255]'
+
+You can supply a function to the 'encode_bytes' hook to change how
+bytes get encoded.
+
+    def to_hex( bytes_val ):
+        return ":".join([ "%02x" % b for b in bytes_val ])
+
+    demjson.encode( py_data, encode_bytes=to_hex )
+    # Gives => '"55:ff"'
+
+See the 'encode_bytes' hook description in HOOKS.txt for further details.
+
+
+Other Python 3 specifics
+========================
+
+Data types
+----------
+
+When encoding JSON, most of the new data types introduced with
+Python 3 will be encoded. Note only does this include the
+byte-oriented types, but also Enum and ChainMap.</p>
+
+
+Chained exceptions
+------------------
+
+Any errors that are incidentally raised during JSON encoding or
+decoding will be wrapped in a 'JSONError' (or subclass).  In Python 3,
+this wrapping uses the standard Exception Chaining (PEP 3134)
+mechanism.</p>
+
+See the Exception Handling example in the file HOOKS.txt
