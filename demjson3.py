@@ -117,14 +117,14 @@ r""" A JSON data encoder and decoder.
     
 """
 
-__author__ = "Deron Meranda <http://deron.meranda.us/>"
-__homepage__ = "http://deron.meranda.us/python/demjson/"
+__author__ = "Deron Meranda <http://deron.meranda.us/>, Niels Mündler"
+__homepage__ = "http://nielstron.github.io/demjson3/"
 
-__date__ = "2015-12-22"
-__version__ = "2.2.4"
-__version_info__ = (2, 2, 4)  # Will be converted into a namedtuple below
+__date__ = "2021-09-08"
+__version__ = "3.0.4"
+__version_info__ = (3, 0, 4)  # Will be converted into a namedtuple below
 
-__credits__ = """Copyright (c) 2006-2015 Deron E. Meranda <http://deron.meranda.us/>
+__credits__ = """Copyright (c) 2006-2021 Deron E. Meranda <http://deron.meranda.us/>, Niels Mündler
 
 Licensed under GNU LGPL (GNU Lesser General Public License) version 3.0
 or later.  See LICENSE.txt included with this software.

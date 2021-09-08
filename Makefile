@@ -3,16 +3,17 @@
 # See the INSTALL.txt file for specific instructions.
 
 PYTHON=python
+PYDOC=pdoc
 
 MODULE=demjson3
-VERSION=3.0.0
+VERSION=3.0.4
 
 SOURCES = $(MODULE).py
 SETUP = setup.py
 READMES = README.txt LICENSE.txt docs/CHANGES.txt docs/INSTALL.txt docs/NEWS.txt
 TESTS = test/test_$(MODULE).py
-#DOCS = docs/$(MODULE).html docs/$(MODULE).txt docs/jsonlint.txt
-DOCS = docs/$(MODULE).txt docs/jsonlint.txt docs/$(MODULE).html
+DOCS = docs/$(MODULE).txt docs/jsonlint.txt
+DOCS_HTML = docs/$(MODULE).html
 SCRIPTS = jsonlint
 DISTDIR = dist
 
@@ -58,6 +59,7 @@ $(DIST_FILE): MANIFEST.in $(ALL_FILES)
 	$(PYTHON) setup.py sdist -d $(DISTDIR)
 
 docs: $(DOCS) ALWAYS
+docs_html: $(DOCS_HTML) ALWAYS
 
 docs/jsonlint.txt: jsonlint $(MODULE).py
 	PYTHONPATH=. ./jsonlint --help >$@
@@ -65,13 +67,8 @@ docs/jsonlint.txt: jsonlint $(MODULE).py
 	PYTHONPATH=. ./jsonlint --strict --help-behaviors >>$@
 
 docs/$(MODULE).txt:     $(MODULE).py
-	pydoc $(MODULE) | sed -e 's|/home/[a-zA-Z0-9_/.-]*/$(MODULE)/dev/||' >docs/$(MODULE).txt
+	python -m pydoc $(MODULE) | sed -e 's|/home/[a-zA-Z0-9_/.-]*/git/demjson/||' >docs/$(MODULE).txt
 
 docs/$(MODULE).html:    $(MODULE).py
-	$(PYTHON) -m pydoc -w $(MODULE)
-	sed -e 's|file:/home/[a-zA-Z0-9_]+/public_html|http://nielstron.github.io/demjson3|g' \
-	   -e 's|>/home/[a-zA-Z0-9_]+/public_html/python/$(MODULE)/[a-zA-Z0-9.]*/|>|g' \
-	   -e 's|>/home/[a-zA-Z0-9/.-]*/$(MODULE)/dev/|>|g' \
-	   -e 's|file:/[^<>]*/dev/|../|g' \
-	<$(MODULE).html >docs/index.html
-	rm -f $(MODULE).html
+	$(PYDOC) --html $(MODULE) -o docs/html
+	mv docs/html/$(MODULE).html docs/html/index.html

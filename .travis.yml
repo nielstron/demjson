@@ -15,6 +15,7 @@ os: linux
 
 install:
 - pip install coverage coveralls
+- pip install pdoc3
 - pip install -e .
 
 script:
@@ -22,7 +23,7 @@ script:
 - make all
 - coverage run --source=demjson3 test/test_demjson3.py
 # creates documentation files
-- make docs
+- make docs_html
 
 after_success:
 - coverage report

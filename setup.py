@@ -1,7 +1,7 @@
 # Python package setup script        -*- coding: utf-8 -*-
 
 name = "demjson3"
-version = "3.0.3"
+version = "3.0.4"
 
 from setuptools import setup
 

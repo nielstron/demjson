@@ -86,7 +86,7 @@ MORE INFORMATION:
     Use 'jsonlint [-W|-s|-S] --help-behaviors' for help on specific checks.
 
     jsonlint is distributed as part of the "demjson" Python module.
-    See http://deron.meranda.us/python/demjson/
+    See http://nielstron.github.io/demjson3/
 
 
 BEHAVIOR OPTIONS:
