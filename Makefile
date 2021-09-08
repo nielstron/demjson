@@ -70,5 +70,5 @@ docs/$(MODULE).txt:     $(MODULE).py
 	python -m pydoc $(MODULE) | sed -e 's|/home/[a-zA-Z0-9_/.-]*/git/demjson/||' >docs/$(MODULE).txt
 
 docs/$(MODULE).html:    $(MODULE).py
-	$(PYDOC) --html $(MODULE) -o docs/html
-	mv docs/html/$(MODULE).html docs/html/index.html
+	$(PYDOC) --html $(MODULE) -o docs
+	mv docs/$(MODULE).html docs/index.html

@@ -121,8 +121,8 @@ __author__ = "Deron Meranda <http://deron.meranda.us/>, Niels Mündler"
 __homepage__ = "http://nielstron.github.io/demjson3/"
 
 __date__ = "2021-09-08"
-__version__ = "3.0.4"
-__version_info__ = (3, 0, 4)  # Will be converted into a namedtuple below
+__version__ = "3.0.5"
+__version_info__ = (3, 0, 5)  # Will be converted into a namedtuple below
 
 __credits__ = """Copyright (c) 2006-2021 Deron E. Meranda <http://deron.meranda.us/>, Niels Mündler
 
